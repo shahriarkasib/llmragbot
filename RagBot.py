@@ -1,8 +1,21 @@
 from utils import get_router_query_engine
 import streamlit as st
 import os
+import shutil
 
+# Set up the directory for saving uploaded files
+UPLOAD_DIR = 'uploaded_files'
 
+# Function to delete and recreate the upload directory
+def reset_upload_dir():
+    if os.path.exists(UPLOAD_DIR):
+        shutil.rmtree(UPLOAD_DIR)
+    os.makedirs(UPLOAD_DIR)
+
+# Check if this is the first run in this session
+if 'initialized' not in st.session_state:
+    reset_upload_dir()
+    st.session_state['initialized'] = True
 # Function to save uploaded file to a specified directory
 def save_uploaded_file(uploaded_file, save_dir):
     file_path = os.path.join(save_dir, uploaded_file.name)
@@ -10,8 +23,7 @@ def save_uploaded_file(uploaded_file, save_dir):
         f.write(uploaded_file.read())
     return file_path
 
-# Set up the directory for saving uploaded files
-UPLOAD_DIR = 'uploaded_files'
+
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 uploaded_files = st.file_uploader("Choose files", type=['docx', 'pdf'], accept_multiple_files=True)
