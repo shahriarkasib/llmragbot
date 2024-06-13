@@ -18,8 +18,10 @@ nest_asyncio.apply()
 openai.api_key = st.secrets.openai_api_key   # Replace with your OpenAI API key
 
 def get_router_query_engine(uploaded_files):
-
-    documents = SimpleDirectoryReader(uploaded_files).load_data()
+    try:
+        documents = SimpleDirectoryReader(uploaded_files).load_data()
+    except:
+        pass
 
     splitter = SentenceSplitter(chunk_size=1024)
     nodes = splitter.get_nodes_from_documents(documents)
