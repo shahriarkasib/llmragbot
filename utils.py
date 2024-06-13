@@ -1,6 +1,7 @@
 import openai
 from collections import deque
 import nest_asyncio
+import streamlit as st
 
 from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceSplitter
@@ -14,11 +15,11 @@ from llama_index.core.selectors import LLMSingleSelector
 
 nest_asyncio.apply()
 
-openai.api_key = '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'  # Replace with your OpenAI API key
+openai.api_key = st.secrets.openai_api_key   # Replace with your OpenAI API key
 
-def get_router_query_engine(path_to_file):
+def get_router_query_engine(uploaded_files):
 
-    documents = SimpleDirectoryReader(input_files=[path_to_file]).load_data()
+    documents = SimpleDirectoryReader(uploaded_files).load_data()
 
     splitter = SentenceSplitter(chunk_size=1024)
     nodes = splitter.get_nodes_from_documents(documents)
