@@ -24,7 +24,7 @@ def get_router_query_engine(uploaded_files):
     splitter = SentenceSplitter(chunk_size=1024)
     nodes = splitter.get_nodes_from_documents(documents)
 
-    Settings.llm = OpenAI(model = "gpt-4o")
+    Settings.llm = OpenAI(model = "gpt-3.5-turbo")
     Settings.embed_model = OpenAIEmbedding(model = "text-embedding-ada-002")
 
     summary_index = SummaryIndex(nodes)
