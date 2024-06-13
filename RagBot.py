@@ -6,16 +6,26 @@ import shutil
 # Set up the directory for saving uploaded files
 UPLOAD_DIR = 'uploaded_files'
 
-# Function to delete and recreate the upload directory
-def reset_upload_dir():
-    if os.path.exists(UPLOAD_DIR):
-        shutil.rmtree(UPLOAD_DIR)
-    os.makedirs(UPLOAD_DIR)
+# Function to clear the upload directory without deleting it
+def clear_upload_dir():
+    for filename in os.listdir(UPLOAD_DIR):
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print(f'Failed to delete {file_path}. Reason: {e}')
 
 # Check if this is the first run in this session
 if 'initialized' not in st.session_state:
-    reset_upload_dir()
+    if not os.path.exists(UPLOAD_DIR):
+        os.makedirs(UPLOAD_DIR)
+    else:
+        clear_upload_dir()
     st.session_state['initialized'] = True
+    
 # Function to save uploaded file to a specified directory
 def save_uploaded_file(uploaded_file, save_dir):
     file_path = os.path.join(save_dir, uploaded_file.name)
