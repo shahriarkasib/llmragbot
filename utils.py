@@ -20,34 +20,34 @@ openai.api_key = st.secrets.openai_api_key   # Replace with your OpenAI API key
 def get_router_query_engine(uploaded_files):
     try:
         documents = SimpleDirectoryReader(uploaded_files).load_data()
+
+        splitter = SentenceSplitter(chunk_size=1024)
+        nodes = splitter.get_nodes_from_documents(documents)
+
+        Settings.llm = OpenAI(model = "gpt-3.5-turbo")
+        Settings.embed_model = OpenAIEmbedding(model = "text-embedding-ada-002")
+
+        summary_index = SummaryIndex(nodes)
+        vector_index = VectorStoreIndex(nodes)
+
+        summary_query_engine = summary_index.as_query_engine(response_mode = "tree_summarize", use_asynch = True)
+        vector_query_engine = vector_index.as_query_engine()
+
+        summary_tool = QueryEngineTool.from_defaults(
+                    query_engine = summary_query_engine, 
+                    description="Useful for retrieving summary of the documents"
+                    )
+        vector_tool = QueryEngineTool.from_defaults(
+                    query_engine = vector_query_engine, 
+                    description="Useful for retrieving specific context from the documents"
+                    )
+
+        query_engine = RouterQueryEngine(selector=LLMSingleSelector.from_defaults(),
+                        query_engine_tools=[summary_tool,vector_tool],
+                        verbose=True
+                        )
+        
+        return query_engine
     except:
         pass
-
-    splitter = SentenceSplitter(chunk_size=1024)
-    nodes = splitter.get_nodes_from_documents(documents)
-
-    Settings.llm = OpenAI(model = "gpt-3.5-turbo")
-    Settings.embed_model = OpenAIEmbedding(model = "text-embedding-ada-002")
-
-    summary_index = SummaryIndex(nodes)
-    vector_index = VectorStoreIndex(nodes)
-
-    summary_query_engine = summary_index.as_query_engine(response_mode = "tree_summarize", use_asynch = True)
-    vector_query_engine = vector_index.as_query_engine()
-
-    summary_tool = QueryEngineTool.from_defaults(
-                query_engine = summary_query_engine, 
-                description="Useful for retrieving summary of the documents"
-                )
-    vector_tool = QueryEngineTool.from_defaults(
-                query_engine = vector_query_engine, 
-                description="Useful for retrieving specific context from the documents"
-                )
-
-    query_engine = RouterQueryEngine(selector=LLMSingleSelector.from_defaults(),
-                    query_engine_tools=[summary_tool,vector_tool],
-                    verbose=True
-                    )
-    
-    return query_engine
-    
+        
