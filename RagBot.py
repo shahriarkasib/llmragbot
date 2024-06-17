@@ -1,7 +1,15 @@
-from utils import get_router_query_engine
+from utils import get_doc_tools
 import streamlit as st
 import os
 import shutil
+
+from llama_index.core.agent import FunctionCallingAgentWorker
+from llama_index.core.agent import AgentRunner
+from llama_index.llms.openai import OpenAI
+
+from llama_index.core import VectorStoreIndex
+from llama_index.core.objects import ObjectIndex
+
 
 # Set up the directory for saving uploaded files
 UPLOAD_DIR = 'uploaded_files'
@@ -45,7 +53,34 @@ if uploaded_files:
         file_path = save_uploaded_file(uploaded_file, UPLOAD_DIR)
         file_paths.append(file_path)
 
-query_engine = get_router_query_engine(UPLOAD_DIR)
+file_to_tools_dict = {}
+      
+for file in file_paths:
+    vector_tool, summary_tool = get_doc_tools(file)
+    file_to_tools_dict[file] = [vector_tool, summary_tool]
+    
+all_tools = [t for file in file_paths for t in file_to_tools_dict[file]]
+
+obj_index = ObjectIndex.from_objects(
+    all_tools,
+    index_cls=VectorStoreIndex,
+)
+
+obj_retriever = obj_index.as_retriever(similarity_top_k=3)
+
+llm = OpenAI(model="gpt-3.5-turbo", temperature=0)
+
+agent_worker = FunctionCallingAgentWorker.from_tools(
+    tool_retriever=obj_retriever,
+    llm=llm, 
+    system_prompt=""" \
+You are an agent designed to answer queries over a set of given documents.
+Please always use the tools provided to answer a question. Do not rely on prior knowledge.\
+
+""",
+    verbose=True
+)
+agent = AgentRunner(agent_worker)
 
 # Streamlit UI for user input
 st.title("Document Query App")
@@ -53,6 +88,6 @@ question = st.chat_input("Ask your question about the document you uploaded:")
 
 # Process the query when the user submits a question
 if question:
-    response = query_engine.query(question)
+    response = agent.chat(question)
     st.write(response.response)
 

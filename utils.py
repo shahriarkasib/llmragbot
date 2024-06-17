@@ -12,12 +12,14 @@ from llama_index.core import SummaryIndex, VectorStoreIndex
 from llama_index.core.tools import QueryEngineTool
 from llama_index.core.query_engine import RouterQueryEngine
 from llama_index.core.selectors import LLMSingleSelector
+from llama_index.core.tools import QueryEngineTool
+
 
 nest_asyncio.apply()
 
 openai.api_key = st.secrets.openai_api_key   # Replace with your OpenAI API key
 
-def get_router_query_engine(uploaded_files):
+def get_doc_tools(uploaded_files):
     try:
         documents = SimpleDirectoryReader(uploaded_files).load_data()
 
@@ -41,13 +43,8 @@ def get_router_query_engine(uploaded_files):
                     query_engine = vector_query_engine, 
                     description="Useful for retrieving specific context from the documents"
                     )
-
-        query_engine = RouterQueryEngine(selector=LLMSingleSelector.from_defaults(),
-                        query_engine_tools=[summary_tool,vector_tool],
-                        verbose=True
-                        )
         
-        return query_engine
+        return vector_tool, summary_tool
     except:
         pass
         
