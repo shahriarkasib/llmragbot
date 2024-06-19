@@ -19,9 +19,9 @@ nest_asyncio.apply()
 
 openai.api_key = st.secrets.openai_api_key   # Replace with your OpenAI API key
 
-def get_doc_tools(uploaded_files):
+def get_doc_tools(uploaded_files, file_name):
     try:
-        documents = SimpleDirectoryReader(uploaded_files).load_data()
+        documents = SimpleDirectoryReader(input_files=[uploaded_files]).load_data()
 
         splitter = SentenceSplitter(chunk_size=1024)
         nodes = splitter.get_nodes_from_documents(documents)
@@ -36,10 +36,12 @@ def get_doc_tools(uploaded_files):
         vector_query_engine = vector_index.as_query_engine()
 
         summary_tool = QueryEngineTool.from_defaults(
+                    name = 'Summary_Tool'+'_'+file_name,
                     query_engine = summary_query_engine, 
                     description="Useful for retrieving summary of the documents"
                     )
         vector_tool = QueryEngineTool.from_defaults(
+                    name = 'vector_Tool'+'_'+file_name,
                     query_engine = vector_query_engine, 
                     description="Useful for retrieving specific context from the documents"
                     )

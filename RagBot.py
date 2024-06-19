@@ -2,6 +2,7 @@ from utils import get_doc_tools
 import streamlit as st
 import os
 import shutil
+from pathlib import Path
 
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.agent import AgentRunner
@@ -13,7 +14,7 @@ from llama_index.core.objects import ObjectIndex
 
 # Set up the directory for saving uploaded files
 UPLOAD_DIR = 'uploaded_files'
-
+file_paths = []
 # Function to clear the upload directory without deleting it
 def clear_upload_dir():
     for filename in os.listdir(UPLOAD_DIR):
@@ -47,28 +48,41 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 uploaded_files = st.file_uploader("Choose files", type=['docx', 'pdf'], accept_multiple_files=True)
 
 if uploaded_files:
-    file_paths = []
-
     for uploaded_file in uploaded_files:
         file_path = save_uploaded_file(uploaded_file, UPLOAD_DIR)
         file_paths.append(file_path)
+        
+
+# Streamlit UI for user input
+st.title("Document Query App")
+question = st.chat_input("Ask your question about the document you uploaded:")
 
 file_to_tools_dict = {}
       
 for file in file_paths:
-    vector_tool, summary_tool = get_doc_tools(file)
+    print(file)
+    vector_tool, summary_tool = get_doc_tools(file, Path(file).stem)
     file_to_tools_dict[file] = [vector_tool, summary_tool]
     
+print(file_to_tools_dict) 
 all_tools = [t for file in file_paths for t in file_to_tools_dict[file]]
-
 obj_index = ObjectIndex.from_objects(
     all_tools,
     index_cls=VectorStoreIndex,
 )
 
-obj_retriever = obj_index.as_retriever(similarity_top_k=3)
 
-llm = OpenAI(model="gpt-3.5-turbo", temperature=0)
+
+obj_retriever = obj_index.as_retriever(similarity_top_k=3)
+if question:
+    tools = obj_retriever.retrieve(
+        question
+    )
+
+    for i in range(0, len(tools)):
+        print(tools[i].metadata)
+
+llm = OpenAI(model="gpt-4o", temperature=0)
 
 agent_worker = FunctionCallingAgentWorker.from_tools(
     tool_retriever=obj_retriever,
@@ -82,9 +96,6 @@ Please always use the tools provided to answer a question. Do not rely on prior 
 )
 agent = AgentRunner(agent_worker)
 
-# Streamlit UI for user input
-st.title("Document Query App")
-question = st.chat_input("Ask your question about the document you uploaded:")
 
 # Process the query when the user submits a question
 if question:
